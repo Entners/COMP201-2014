@@ -1,10 +1,11 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
+#include <vector>
 
 using namespace std;
 
-enum State { FIRST, MATCH, NO_MATCH };
+enum State { INIT, FIRST, NO_MATCH };
 
 // To clear the screen, look up ANSI escape codes
 // Concentration game model
@@ -30,7 +31,7 @@ public:
 private:
     // Is the row/column valid?
     bool valid(int row, int column);
-    // Did the cell at current row/column match the cell at the last row/column 
+    // Did the cell at current row/column match the cell at the last row/column
     bool matched(int row, int column);
     // Fields (member data)
     // Randomly generated grid. This has pairs of characters in it
@@ -42,8 +43,8 @@ private:
     // What's the height?
     int height;
     // What'd we flip last?
-    int lastRow;
-    int lastColumn;
+    vector<int> lastrow;
+    vector<int> lastcol;
     State state;
 };
 
@@ -76,9 +77,7 @@ private:
 Model::Model(int w, int h) {
     width = w;
     height = h;
-    lastRow = -1;
-    lastColumn = -1;
-    state = FIRST;
+    state = INIT;
     // Two dimensional array
     grid = new char*[height];
     visible = new char*[height];
@@ -93,7 +92,7 @@ Model::Model(int w, int h) {
         for (int j = 0; j < width; j++) {
             grid[i][j] = letter;
             // Everything's invisible at first
-            visible[i][j] = letter;
+            visible[i][j] = '*';
             // Every other iteration...
             if (j % 2 == 1) {
                 letter++;
@@ -113,9 +112,9 @@ Model::Model(int w, int h) {
             otheri = rand() % height;
             otherj = rand() % width;
             // Swap grid[i][j] with grid[otheri][otherj]
-            letter = visible[i][j];
-            visible[i][j] = visible[otheri][otherj];
-            visible[otheri][otherj] = letter;
+            letter = grid[i][j];
+            grid[i][j] = grid[otheri][otherj];
+            grid[otheri][otherj] = letter;
         }
     }
 }
@@ -141,13 +140,49 @@ bool Model::matched(int row, int column) {
 void Model::flip(int row, int column) {
     // If the row and column are not valid, break out and don't do anything
     if (!valid(row, column)) { return; }
+    if (state != INIT && (row == lastrow.back()) && (column == lastcol.back())) { return; }
     
+    // Reveal
+    visible[row][column] = grid[row][column];
+    
+    switch (state) {
+        case INIT:
+            lastrow.clear();
+            lastcol.clear();
+            state = FIRST;
+            break;
+        case FIRST:
+            if(grid[row][column] != grid[lastrow.back()][lastcol.back()])
+            {
+                state = NO_MATCH;
+            }
+            else
+            {
+                state = INIT;
+            }
+            break;
+        case NO_MATCH:
+            visible[lastrow[0]][lastcol[0]] = '*';
+            visible[lastrow[1]][lastcol[1]] = '*';
+            state = FIRST;
+            break;
+    }
+    
+    // Add to history
+    lastrow.push_back(row);
+    lastcol.push_back(column);
 }
 // TODO: If everything is visible, then it's game over
 bool Model::gameOver() {
-    // Hint: assume the game is over, unless it isn't
-    // Hint: Loop through the grid and see if any element is not visible
-    return false;
+    for (int i = 0; i < height; i++) {
+        for (int j = 0; j < width; j++) {
+            if (visible[i][j] != grid[i][j])
+            {
+                return false;
+            }
+        }
+    }
+    return true;
 }
 int Model::getWidth() {
     return width;

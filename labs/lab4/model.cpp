@@ -35,6 +35,7 @@ Model::Model(int w, int h) {
     // Seed random number generator with time
     srand(time(0));
     // Randomize
+    
     int otheri, otherj;
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
@@ -47,6 +48,7 @@ Model::Model(int w, int h) {
             grid[otheri][otherj] = letter;
         }
     }
+     
 }
 // Destructor deletes dynamically allocated memory
 Model::~Model() {
@@ -70,7 +72,36 @@ bool Model::matched(int row, int column) {
 void Model::flip(int row, int column) {
     // If the row and column are not valid, break out and don't do anything
     if (!valid(row, column)) { return; }
+    if (state != INIT && (row == lastrow.back()) && (column == lastcol.back())) { return; }
+    
+    
+    // Reveal
     visible[row][column] = grid[row][column];
+    
+    switch (state) {
+        case NO_MATCH:
+            visible[lastrow[0]][lastcol[0]] = '_';
+            visible[lastrow[1]][lastcol[1]] = '_';
+        case INIT:
+            lastrow.clear();
+            lastcol.clear();
+            state = FIRST;
+            break;
+        case FIRST:
+            if(grid[row][column] != grid[lastrow.back()][lastcol.back()])
+            {
+                state = NO_MATCH;
+            }
+            else
+            {
+                state = INIT;
+            }
+            break;
+    }
+    
+    // Add to history
+    lastrow.push_back(row);
+    lastcol.push_back(column);
 }
 // If everything is visible, then it's game over
 bool Model::gameOver() {

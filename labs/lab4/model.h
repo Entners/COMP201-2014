@@ -41,8 +41,8 @@ private:
     // What's the height?
     int height;
     // What'd we flip last?
-    std::vector<int> lastRow;
-    std::vector<int> lastColumn;
+    std::vector<int> lastrow;
+    std::vector<int> lastcol;
     State state;
 };
 
